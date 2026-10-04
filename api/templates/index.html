@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     
@@ -67,7 +68,13 @@
             
             const bubbleDiv = document.createElement("div");
             bubbleDiv.classList.add("msg-bubble");
-            bubbleDiv.textContent = text;
+            
+            if (sender === "bot") {
+                // Parse markdown into clean HTML (bullet points, bold text, code blocks)
+                bubbleDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(text) : text;
+            } else {
+                bubbleDiv.textContent = text;
+            }
             
             msgDiv.appendChild(bubbleDiv);
             chatBox.appendChild(msgDiv);
