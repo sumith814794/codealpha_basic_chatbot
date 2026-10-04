@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura | Advanced AI Chatbot</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    
+    <!-- Animated background elements -->
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="avatar">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="header-info">
+                <h2>Aura AI</h2>
+                <p><span class="status-dot"></span> Online</p>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-box" id="chat-box">
+            <div class="message bot">
+                <div class="msg-bubble">
+                    Hello! I am Aura, your advanced AI assistant. How can I help you today?
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator (Hidden by default) -->
+        <div class="typing-indicator hidden" id="typing">
+            <span></span><span></span><span></span>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="Type a message..." autocomplete="off">
+            <button id="send-btn" onclick="sendMessage()">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const userInput = document.getElementById("user-input");
+        const typingIndicator = document.getElementById("typing");
+
+        // Allow sending message with Enter key
+        userInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        function appendMessage(text, sender) {
+            const msgDiv = document.createElement("div");
+            msgDiv.classList.add("message", sender);
+            
+            const bubbleDiv = document.createElement("div");
+            bubbleDiv.classList.add("msg-bubble");
+            bubbleDiv.textContent = text;
+            
+            msgDiv.appendChild(bubbleDiv);
+            chatBox.appendChild(msgDiv);
+            
+            // Auto scroll to bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Display user message
+            appendMessage(text, "user");
+            userInput.value = "";
+
+            // Show typing indicator
+            typingIndicator.classList.remove("hidden");
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Send request to Flask backend
+                const response = await fetch("/get_response", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const data = await response.json();
+
+                // Simulate slight delay for "thinking" effect
+                setTimeout(() => {
+                    typingIndicator.classList.add("hidden");
+                    appendMessage(data.response, "bot");
+                }, 800);
+
+            } catch (error) {
+                typingIndicator.classList.add("hidden");
+                appendMessage("Oops! My servers seem to be offline.", "bot");
+            }
+        }
+    </script>
+</body>
+</html>
