@@ -25,28 +25,43 @@ app = Flask(
 # Configure the API key
 API_KEY = os.environ.get("GEMINI_API_KEY")
 
-model = None
 if API_KEY:
     genai.configure(api_key=API_KEY)
-    # Using Gemini 3.8 Flash configured as Aura AI
-    model = genai.GenerativeModel(
-        'gemini-3.8-flash',
-        system_instruction="You are Aura, a friendly, modern, and helpful advanced AI assistant."
-    )
+
+# List of models to fall back through if one hits its rate limit
+FALLBACK_MODELS = [
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-3.8-flash"
+]
+
+SYSTEM_INSTRUCTION = "You are Aura, a friendly, modern, and helpful advanced AI assistant."
 
 def get_bot_response(user_input):
     user_input = user_input.strip()
     
-    # Check if Gemini API is available
-    if not model:
+    if not API_KEY:
         return "I need a Gemini API Key to answer any question! Please set the 'GEMINI_API_KEY' in your environment variables."
-        
-    try:
-        # Generate a response using the AI model
-        response = model.generate_content(user_input)
-        return response.text
-    except Exception as e:
-        return f"Oops! I encountered an error while thinking: {str(e)}"
+
+    # Try each model in sequence in case one has exceeded quota
+    last_error = None
+    for model_name in FALLBACK_MODELS:
+        try:
+            model = genai.GenerativeModel(
+                model_name,
+                system_instruction=SYSTEM_INSTRUCTION
+            )
+            response = model.generate_content(user_input)
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            last_error = e
+            continue
+
+    # Graceful message instead of raw JSON error dump
+    return "I'm experiencing high traffic right now and my free API quota is momentarily cooling down. Please try again in a little while!"
 
 # Serve static files explicitly
 @app.route("/static/<path:filename>")
